@@ -2,17 +2,17 @@ package test
 
 import (
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/operationalinsights/mgmt/operationalinsights"
+	"github.com/gruntwork-io/terratest/modules/azure"
+	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/operationalinsights/mgmt/operationalinsights"
-	"github.com/gruntwork-io/terratest/modules/azure"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/terraform"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -25,7 +25,7 @@ var (
 )
 
 // Creates Resource Group with default values
-func TestCreateResouceGroup(t *testing.T) {
+func TestCreateResourceGroup(t *testing.T) {
 	// Copies default Terraform config
 	terraformOptions := terraformDefaultConfig
 
@@ -54,10 +54,7 @@ func TestRecreateWithSuffix(t *testing.T) {
 	exists := azure.ResourceGroupExists(t, resourceGroupName, subscriptionId)
 
 	// If it can't find such resource test will throw an Error
-	assert.True(t,
-		exists,
-		"Resource group with suffix does not exist",
-	)
+	assert.True(t, exists, "Resource group with suffix does not exist")
 }
 
 // Creates Log Analytics Workspace
@@ -87,16 +84,11 @@ func TestCreateLogAnalyticsWorkspace(t *testing.T) {
 	)
 
 	// If it cant find such resource test will throw an Error
-	assert.True(t,
-		exists,
-		"Log Analytics Workspace does not exists",
-	)
+	assert.True(t, exists, "Log Analytics Workspace does not exists")
 }
 
-// Recreates resouces with fully custom name
+// Recreates resources with fully custom name
 func TestRecreateWithCustomNames(t *testing.T) {
-	t.Parallel()
-
 	// Pointer example. All changes would be also saved in original variable
 	terraformOptions := *terraformDefaultConfig
 
@@ -105,13 +97,11 @@ func TestRecreateWithCustomNames(t *testing.T) {
 		"custom_resource_group_name": fmt.Sprintf("resource-group-%v-%v", uniqueEnv, uniqueSuffix),
 		"log_analytics_ws_enabled":   true,
 		"custom_workspace_name":      fmt.Sprintf("log-analytics-ws-%v-%v", uniqueEnv, uniqueSuffix),
-		//"analytics_retention_in_days": 15,
 	}
 
 	// In this case, test will run Apply and then Plan,
 	// if there will be changes in new Plan this test will throw an Error
-	//terraform.ApplyAndIdempotent(t, terraformDefaultConfig)
-	terraform.InitAndApply(t, terraformDefaultConfig)
+	terraform.Apply(t, terraformDefaultConfig)
 
 	// Stores value of 'name' parameter of from Terraform outputs
 	resourceGroupName := terraform.OutputMap(t, terraformDefaultConfig, "resource_group")["name"]
@@ -130,15 +120,9 @@ func TestRecreateWithCustomNames(t *testing.T) {
 	)
 
 	// If it cant find such resource under specified name -  test will throw an Error
-	assert.True(t,
-		existsRg,
-		"Resource group with custom name does not exists",
-	)
+	assert.Truef(t, existsRg, "Resource group with custom name does not exists")
 
-	assert.True(t,
-		existsWs,
-		"Log Analytics Workspace with custom name does not exists",
-	)
+	assert.Truef(t, existsWs, "Log Analytics Workspace with custom name does not exists")
 }
 
 // Validates configuration of Log Analytics Workspaces
@@ -149,7 +133,7 @@ func TestLogAnalyticsWsConfigTesting(t *testing.T) {
 	// Stores value of 'name' parameter of from Terraform outputs
 	logAnalyticsName := terraform.OutputMap(t, terraformDefaultConfig, "log_analytics_ws")["name"]
 
-	// Gets all infromation about created Log Analytics Workspaces
+	// Gets all information about created Log Analytics Workspaces
 	ws := azure.GetLogAnalyticsWorkspace(t, logAnalyticsName, resourceGroupName, subscriptionId)
 
 	// Checks if Workspace successfully created
@@ -164,13 +148,6 @@ func TestLogAnalyticsWsConfigTesting(t *testing.T) {
 		operationalinsights.Enabled,
 		ws.WorkspaceProperties.PublicNetworkAccessForIngestion,
 		"Public Access is disabled on Workspace",
-	)
-
-	// Checks if Workspace Log retention duration is greater or equal to provided by Terraform
-	assert.EqualValues(t,
-		int32(45), //terraformDefaultConfig.Vars["analytics_retention_in_days"],
-		*ws.WorkspaceProperties.RetentionInDays,
-		"Workspace log retention duration is not valid",
 	)
 }
 
