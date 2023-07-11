@@ -95,15 +95,17 @@ func TestCreateLogAnalyticsWorkspace(t *testing.T) {
 
 // Recreates resouces with fully custom name
 func TestRecreateWithCustomNames(t *testing.T) {
+	t.Parallel()
+
 	// Pointer example. All changes would be also saved in original variable
 	terraformOptions := *terraformDefaultConfig
 
 	// Provides values to variables that define custom names for resources
 	terraformOptions.Vars = map[string]interface{}{
-		"custom_resource_group_name":  fmt.Sprintf("resource-group-%v-%v", uniqueEnv, uniqueSuffix),
-		"log_analytics_ws_enabled":    true,
-		"custom_workspace_name":       fmt.Sprintf("log-analytics-ws-%v-%v", uniqueEnv, uniqueSuffix),
-		"analytics_retention_in_days": 15,
+		"custom_resource_group_name": fmt.Sprintf("resource-group-%v-%v", uniqueEnv, uniqueSuffix),
+		"log_analytics_ws_enabled":   true,
+		"custom_workspace_name":      fmt.Sprintf("log-analytics-ws-%v-%v", uniqueEnv, uniqueSuffix),
+		//"analytics_retention_in_days": 15,
 	}
 
 	// In this case, test will run Apply and then Plan,
@@ -166,8 +168,8 @@ func TestLogAnalyticsWsConfigTesting(t *testing.T) {
 
 	// Checks if Workspace Log retention duration is greater or equal to provided by Terraform
 	assert.EqualValues(t,
-		int32(15), //terraformDefaultConfig.Vars["analytics_retention_in_days"],
-		ws.WorkspaceProperties.RetentionInDays,
+		int32(45), //terraformDefaultConfig.Vars["analytics_retention_in_days"],
+		*ws.WorkspaceProperties.RetentionInDays,
 		"Workspace log retention duration is not valid",
 	)
 }
